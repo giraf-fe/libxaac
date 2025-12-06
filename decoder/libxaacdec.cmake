@@ -137,3 +137,4 @@ else()
 endif()
 
 add_library(libxaacdec STATIC ${LIBXAAC_COMMON_SRCS} ${LIBXAACDEC_SRCS} ${LIBXAACCDEC_ASMS})
+target_include_directories(libxaacdec PUBLIC ${LIBXAACDEC_INCLUDES})
