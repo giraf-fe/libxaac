@@ -26,6 +26,8 @@
 #include "ixheaacd_mps_aac_struct.h"
 #include "ixheaacd_mps_res_channel.h"
 #include "ixheaac_constants.h"
+#include "ixheaac_basic_ops32.h"
+#include "ixheaac_basic_ops40.h"
 #include "ixheaacd_cnst.h"
 #include "ixheaacd_common_rom.h"
 #include "ixheaacd_sbrdecsettings.h"
@@ -1390,7 +1392,7 @@ static IA_ERRORCODE ixheaacd_factor_funct(WORD32 ott_vs_tot_db, WORD32 quant_mod
   WORD32 constfact;
 
   if (ott_vs_tot_db > 0) return IA_XHEAAC_MPS_DEC_EXE_FATAL_INVALID_MPS_PARAM;
-  db_diff = -ott_vs_tot_db;
+  db_diff = ixheaac_negate32_sat(ott_vs_tot_db);
 
   switch (quant_mode) {
     case QUANT_MODE_0:
@@ -1414,7 +1416,9 @@ static IA_ERRORCODE ixheaacd_factor_funct(WORD32 ott_vs_tot_db, WORD32 quant_mod
 
   if (db_diff > (x_linear << 5)) {
     WORD32 db_diff_fix = db_diff >> 5;
-    *factor = (db_diff_fix - (WORD32)x_linear) * constfact + ONE_IN_Q24;
+    *factor = ixheaac_add32_sat(
+        ixheaac_sat64_32(ixheaac_mult64(ixheaac_sub32_sat(db_diff_fix, x_linear), constfact)),
+        ONE_IN_Q24);
   } else {
     *factor = ONE_IN_Q24;
   }
@@ -1433,8 +1437,8 @@ static VOID ixheaacd_factor_cld(WORD32 *idx, WORD32 ott_vs_tot_db, WORD32 *ott_v
 
   ixheaacd_factor_funct(ott_vs_tot_db, quant_mode, &factor);
 
-  cld_idx = (((*idx * factor) + THIRTYONE_BY_TWO_IN_Q24) >> 24);
-  cld_idx -= 15;
+  cld_idx = ixheaac_mul32_sh(*idx, factor, 23);
+  cld_idx = ixheaac_shr32(ixheaac_add32(cld_idx, 1), 1);
 
   cld_idx = min(cld_idx, 15);
   cld_idx = max(cld_idx, -15);

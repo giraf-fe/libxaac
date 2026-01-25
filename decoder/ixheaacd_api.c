@@ -522,6 +522,9 @@ IA_ERRORCODE ixheaacd_dec_api(pVOID p_ia_xheaac_dec_obj, WORD32 i_cmd,
             err_code = IA_FATAL_ERROR;
           } else {
             err_code = ixheaacd_dec_init(p_obj_exhaacplus_dec);
+            if (err_code && p_obj_exhaacplus_dec->p_state_aac->s_adts_hdr_present) {
+              p_obj_exhaacplus_dec->p_state_aac->header_dec_done = 0;
+            }
             if (p_obj_exhaacplus_dec->aac_config.ui_err_conceal && err_code) {
               if (err_code & IA_FATAL_ERROR) {
                 err_code = IA_XHEAAC_DEC_INIT_FATAL_EC_INIT_FAIL;
@@ -959,13 +962,13 @@ IA_ERRORCODE ixheaacd_dec_api(pVOID p_ia_xheaac_dec_obj, WORD32 i_cmd,
 #endif
       else if (IA_XHEAAC_DEC_CONFIG_PARAM_DRC_CUT == i_idx) {
         UWORD32 *ui_value = (UWORD32 *)(&p_obj_exhaacplus_dec->aac_config.ui_drc_cut);
-        *pui_value = *ui_value;
+        *pf_value = (*ui_value) / 100.0f;
       } else if (IA_XHEAAC_DEC_CONFIG_PARAM_DRC_BOOST == i_idx) {
         UWORD32 *ui_value = (UWORD32 *)(&p_obj_exhaacplus_dec->aac_config.ui_drc_boost);
-        *pui_value = *ui_value;
+        *pf_value = (*ui_value) / 100.0f;
       } else if (IA_XHEAAC_DEC_CONFIG_PARAM_DRC_MODE_CUT == i_idx) {
         UWORD8 *ui_value = (&p_obj_exhaacplus_dec->aac_config.ui_drc_mode_cut);
-        *pb_value = *ui_value;
+        *pb_value = (*ui_value);
       } else if (IA_XHEAAC_DEC_CONFIG_PARAM_DRC_MODE_BOOST == i_idx) {
         UWORD8 *ui_value = (&p_obj_exhaacplus_dec->aac_config.ui_drc_mode_boost);
         *pb_value = *ui_value;
@@ -1138,6 +1141,9 @@ IA_ERRORCODE ixheaacd_decoder_2_ga_hdr(ia_exhaacplus_dec_api_struct *p_obj_exhaa
     p_obj_exhaacplus_dec->aac_config.ui_flush_cmd = 0;
     err_code = ixheaacd_dec_init(p_obj_exhaacplus_dec);
   }
+  if (err_code && p_obj_exhaacplus_dec->p_state_aac->s_adts_hdr_present) {
+    p_obj_exhaacplus_dec->p_state_aac->header_dec_done = 0;
+  }
   if (p_obj_exhaacplus_dec->aac_config.ui_err_conceal && err_code) {
     if (err_code & IA_FATAL_ERROR) {
       return IA_XHEAAC_DEC_INIT_FATAL_EC_INIT_FAIL;
@@ -1231,6 +1237,9 @@ IA_ERRORCODE ixheaacd_decoder_flush_api(ia_exhaacplus_dec_api_struct *p_obj_exha
   } else {
     p_obj_exhaacplus_dec->aac_config.ui_flush_cmd = 0;
     err_code = ixheaacd_dec_init(p_obj_exhaacplus_dec);
+  }
+  if (err_code && p_obj_exhaacplus_dec->p_state_aac->s_adts_hdr_present) {
+    p_obj_exhaacplus_dec->p_state_aac->header_dec_done = 0;
   }
   if (p_obj_exhaacplus_dec->aac_config.ui_err_conceal && err_code) {
     if (err_code & IA_FATAL_ERROR) {
