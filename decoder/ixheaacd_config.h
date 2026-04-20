@@ -721,4 +721,6 @@ UWORD32 ixheaacd_sbr_params(UWORD32 core_sbr_frame_len_idx,
 WORD32 ixheaacd_config(ia_bit_buf_struct *bit_buff,
                        ia_usac_config_struct *pstr_usac_conf, UINT32 *chan, WORD32 ec_flag);
 
+FLAG ixheaacd_validate_res_frames_per_spatial_frame(WORD32 num_slots, WORD32 val);
+
 #endif /* IXHEAACD_CONFIG_H */
