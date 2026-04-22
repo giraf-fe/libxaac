@@ -59,6 +59,8 @@ static IA_ERRORCODE ixheaacd_ld_spatial_extension_config(
 
   tmp = it_bit_buff->cnt_bits;
 
+  WORD32 num_slots = config->bs_frame_length + 1;
+
   while (ba >= 8) {
     if (config->sac_ext_cnt >= MAX_NUM_EXT_TYPES) return IA_FATAL_ERROR;
 
@@ -91,6 +93,11 @@ static IA_ERRORCODE ixheaacd_ld_spatial_extension_config(
           config->bs_residual_frames_per_spatial_frame =
               ixheaacd_read_bits_buf(it_bit_buff, 2);
 
+          if (!ixheaacd_validate_res_frames_per_spatial_frame(
+                  num_slots, config->bs_residual_frames_per_spatial_frame)) {
+            return IA_FATAL_ERROR;
+          }
+
           if ((config->num_ott_boxes + config->num_ttt_boxes) >
               MAX_RESIDUAL_CHANNELS)
             return IA_FATAL_ERROR;
@@ -118,6 +125,12 @@ static IA_ERRORCODE ixheaacd_ld_spatial_extension_config(
           }
           config->bs_arbitrary_downmix_residual_frames_per_spatial_frame =
               ixheaacd_read_bits_buf(it_bit_buff, 2);
+
+          if (!ixheaacd_validate_res_frames_per_spatial_frame(
+                  num_slots, config->bs_arbitrary_downmix_residual_frames_per_spatial_frame)) {
+            return IA_FATAL_ERROR;
+          }
+
           config->bs_arbitrary_downmix_residual_bands =
               ixheaacd_read_bits_buf(it_bit_buff, 5);
           if (config->bs_arbitrary_downmix_residual_bands >=
