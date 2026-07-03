@@ -57,6 +57,29 @@ static WORD32 ixheaacd_bound_check(WORD32 var, WORD32 lower_bound, WORD32 upper_
   return var;
 }
 
+FLAG ixheaacd_validate_res_frames_per_spatial_frame(WORD32 num_slots, WORD32 val) {
+  switch (num_slots) {
+    case 15:
+    case 16:
+    case 18:
+    case 24:
+    case 30:
+      return val == 0;
+    case 32:
+      return val == 0 || val == 1;
+    case 36:
+    case 48:
+    case 60:
+      return val == 1;
+    case 64:
+      return val == 1 || val == 3;
+    case 72:
+      return val == 2;
+    default:
+      return 0;
+  }
+}
+
 static VOID ixheaacd_mps_check_index_bounds(
     WORD32 output_idx_data[][MAX_PARAMETER_SETS][MAX_PARAMETER_BANDS],
     WORD32 num_parameter_sets, WORD32 start_band, WORD32 stop_band,
@@ -83,6 +106,8 @@ static IA_ERRORCODE ixheaacd_parse_extension_config(
   WORD32 ba = bits_available;
 
   config->sac_ext_cnt = 0;
+
+  WORD32 num_slots = config->bs_frame_length + 1;
 
   while (ba >= 8) {
     ba -= 8;
@@ -111,6 +136,11 @@ static IA_ERRORCODE ixheaacd_parse_extension_config(
         }
         config->bs_residual_frames_per_spatial_frame = temp & TWO_BIT_MASK;
 
+        if (!ixheaacd_validate_res_frames_per_spatial_frame(
+                num_slots, config->bs_residual_frames_per_spatial_frame)) {
+          return IA_FATAL_ERROR;
+        }
+
         for (i = 0; i < num_ott_boxes + num_ttt_boxes; i++) {
           config->bs_residual_present[i] = ixheaacd_read_bits_buf(it_bit_buff, 1);
           if (config->bs_residual_present[i]) {
@@ -133,6 +163,12 @@ static IA_ERRORCODE ixheaacd_parse_extension_config(
         }
         config->bs_arbitrary_downmix_residual_frames_per_spatial_frame =
             (temp >> 5) & TWO_BIT_MASK;
+
+        if (!ixheaacd_validate_res_frames_per_spatial_frame(
+                num_slots, config->bs_arbitrary_downmix_residual_frames_per_spatial_frame)) {
+          return IA_FATAL_ERROR;
+        }
+
         config->bs_arbitrary_downmix_residual_bands = temp & FIVE_BIT_MASK;
         if (config->bs_arbitrary_downmix_residual_bands >=
             ixheaacd_freq_res_table[config->bs_freq_res]) {
@@ -1448,8 +1484,8 @@ static VOID ixheaacd_factor_cld(WORD32 *idx, WORD32 ott_vs_tot_db, WORD32 *ott_v
   c1 = ixheaacd_mps_dec_bitdec_tables->factor_cld_tab_1[*idx + 15];
   c2 = ixheaacd_mps_dec_bitdec_tables->factor_cld_tab_1[15 - *idx];
 
-  *ott_vs_tot_db_1 = c1 + ott_vs_tot_db;
-  *ott_vs_tot_db_2 = c2 + ott_vs_tot_db;
+  *ott_vs_tot_db_1 = ixheaac_add32_sat(c1, ott_vs_tot_db);
+  *ott_vs_tot_db_2 = ixheaac_add32_sat(c2, ott_vs_tot_db);
 }
 
 static IA_ERRORCODE ixheaacd_map_index_data(
